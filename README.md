@@ -8,11 +8,11 @@ This repository implements a Pseudorandom Code (PRC) watermarking scheme in C++1
 
 Defaults (edit in `Config.h`):
 
-* **Codeword length (`l`)**: 500 bits
-* **Number of parity-check sets (`n`)**: 1,000,000
-* **Checks per set (`k`)**: 136 pairs
-* **Detection threshold (`t`)**: 101
-* **Flip probability for Test 2 (`p`)**: 0.1
+* **Codeword length (**\`\`**)**: 500 bits
+* **Number of parity-check sets (**\`\`**)**: 1,000,000
+* **Checks per set (**\`\`**)**: 64 pairs
+* **Detection threshold (**\`\`**)**: 53
+* **Flip probability for Test 2 (**\`\`**)**: 0.1
 
 #### Workflow
 
@@ -31,7 +31,7 @@ Defaults (edit in `Config.h`):
 
    * **Precomputed masks**: parity-pair masks are built once at startup to speed up encoding.
    * **Parallel detection**: uses OpenMP to distribute the detection loop across CPU cores.
-   * **Table-based detection (`detect_precomputed`)**: precomputes all `l choose 2` XORs once, then performs threshold counts via fast lookups.
+   * **Table-based detection (**\`\`**)**: precomputes all `l choose 2` XORs once, then performs threshold counts via fast lookups.
 
 ---
 
@@ -53,19 +53,17 @@ Defaults (edit in `Config.h`):
 
 ### 3. Configuring Parameters
 
-Open **`Config.h`** and edit the default values for:
+Open \`\` and edit the default values for:
 
 ```cpp
     int    l = 500;       // codeword length
     size_t n = 1000000;   // number of parity-check sets
-    int    k = 136;        // checks per set
-    int    t = 101;        // detection threshold
+    int    k = 64;        // checks per set
+    int    t = 53;        // detection threshold
     double p = 0.1;       // flip probability for Test 2
 ```
 
 Then rebuild to apply your new parameters.
-
-The parameters currently chosen satisfy >95% detection rate and <2% false positive rate.
 
 ---
 
@@ -140,6 +138,36 @@ Performs one encode+detect cycle and prints the result.
 
 ### 7. Performance Notes
 
-* Core memory footprint \~5 GiB for default parameters.
+* Core memory footprint \~5 GiB for default parameters.
 * OpenMP parallelizes detection across all available cores.
+
+---
+
+### 8. Parameter Estimation Script
+
+This repository includes `, a utility to compute the minimal number of checks ` required to achieve a desired security level under noise.
+
+**Formula:**
+
+```
+k >= 8 * ln(2*n/sec) / (1 - 2*p)^4
+```
+
+* **n**   = number of parity-check sets
+* **p**   = noise rate
+* **sec** = security parameter (e.g. 2^-80)
+
+**Usage:**
+
+```bash
+python k_estimate.py --n 1000000 --p 0.1 --sec 2**-80
+```
+
+**Options:**
+
+* `--n`   (float)   Number of parity-check sets (default: 1e6)
+* `--p`   (float)   Noise rate (default: 0.1)
+* `--sec` (float or expression) Security parameter (default: 2\*\*-80)
+
+This will print the estimated minimal **k** plus the parameters used. You still need to manually adjust the **k** in `Config.h`.
 
